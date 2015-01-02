@@ -1,0 +1,4 @@
+quack
+=====
+
+Duck typing traits
