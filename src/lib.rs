@@ -6,6 +6,7 @@
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::ops::{ Deref, DerefMut };
 
 impl<'a, T, U: GetFrom<T>> GetFrom<&'a RefCell<T>> for U {
     #[inline(always)]
