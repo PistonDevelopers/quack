@@ -16,8 +16,8 @@ impl<'a, T, U> GetFrom for (U, &'a RefCell<T>)
     type Object = &'a RefCell<T>;
 
     #[inline(always)]
-    fn get_from(_: Me<Self>, obj: & &'a RefCell<T>) -> U {
-        GetFrom::get_from(Me::<(U, T)>, obj.borrow().deref())
+    fn get_from(obj: &&'a RefCell<T>) -> U {
+        <(U, T) as GetFrom>::get_from(obj.borrow().deref())
     }
 }
 
@@ -29,8 +29,8 @@ impl<T, U> GetFrom for (U, Rc<RefCell<T>>)
     type Object = Rc<RefCell<T>>;
 
     #[inline(always)]
-    fn get_from(_: Me<Self>, obj: &Rc<RefCell<T>>) -> U {
-        GetFrom::get_from(Me::<(U, T)>, obj.borrow().deref())
+    fn get_from(obj: &Rc<RefCell<T>>) -> U {
+        <(U, T) as GetFrom>::get_from(obj.borrow().deref())
     }
 }
 
@@ -42,8 +42,8 @@ impl<'a, F, T> SetAt for (T, &'a RefCell<F>)
     type Object = &'a RefCell<F>;
 
     #[inline(always)]
-    fn set_at(_: Me<Self>, val: T, obj: &mut &'a RefCell<F>) {
-        SetAt::set_at(Me::<(T, F)>, val, obj.borrow_mut().deref_mut())
+    fn set_at(val: T, obj: &mut &'a RefCell<F>) {
+        <(T, F) as SetAt>::set_at(val, obj.borrow_mut().deref_mut())
     }
 }
 
@@ -55,8 +55,8 @@ impl<F, T> SetAt for (T, Rc<RefCell<F>>)
     type Object = Rc<RefCell<F>>;
 
     #[inline(always)]
-    fn set_at(_: Me<Self>, val: T, obj: &mut Rc<RefCell<F>>) {
-        SetAt::set_at(Me::<(T, F)>, val, obj.borrow_mut().deref_mut())
+    fn set_at(val: T, obj: &mut Rc<RefCell<F>>) {
+        <(T, F) as SetAt>::set_at(val, obj.borrow_mut().deref_mut())
     }
 }
 
@@ -69,8 +69,8 @@ impl<'a, F, A, V> ActOn<V> for (A, &'a RefCell<F>)
     type Object = &'a RefCell<F>;
 
     #[inline(always)]
-    fn act_on(_: Me<Self>, action: A, obj: &mut &'a RefCell<F>) -> V {
-        ActOn::act_on(Me::<(A, F)>, action, obj.borrow_mut().deref_mut())
+    fn act_on(action: A, obj: &mut &'a RefCell<F>) -> V {
+        <(A, F) as ActOn<V>>::act_on(action, obj.borrow_mut().deref_mut())
     }
 }
 
@@ -82,15 +82,10 @@ impl<F, A, V> ActOn<V> for (A, Rc<RefCell<F>>)
     type Object = Rc<RefCell<F>>;
 
     #[inline(always)]
-    fn act_on(_: Me<Self>, action: A, obj: &mut Rc<RefCell<F>>) -> V {
-        ActOn::act_on(Me::<(A, F)>, action, obj.borrow_mut().deref_mut())
+    fn act_on(action: A, obj: &mut Rc<RefCell<F>>) -> V {
+        <(A, F) as ActOn<V>>::act_on(action, obj.borrow_mut().deref_mut())
     }
 }
-
-/// Used to solve problems when calling static methods on traits.
-/// Calling static methods is necessary to solve implementation rules
-/// when reexporting property types.
-pub struct Me<T>;
 
 /// Something that can be set at an object.
 ///
@@ -101,11 +96,7 @@ pub trait SetAt {
     type Object;
 
     /// Modify `F` with self.
-    fn set_at(
-        me: Me<Self>, 
-        val: <Self as SetAt>::Property,
-        obj: &mut <Self as SetAt>::Object
-    );
+    fn set_at(val: Self::Property, obj: &mut Self::Object);
 }
 
 /// Automatically implemented through the `SetAt` trait.
@@ -124,13 +115,13 @@ impl<T, U> Set<U> for T
 {
     #[inline(always)]
     fn set(mut self, val: U) -> T {
-        SetAt::set_at(Me::<(U, T)>, val, &mut self);
+        <(U, T) as SetAt>::set_at(val, &mut self);
         self
     }
 
     #[inline(always)]
     fn set_mut(&mut self, val: U) -> &mut T {
-        SetAt::set_at(Me::<(U, T)>, val, self);
+        <(U, T) as SetAt>::set_at(val, self);
         self
     }
 }
@@ -142,10 +133,7 @@ pub trait GetFrom {
     type Object;
 
     /// Gets value from object.
-    fn get_from(
-        me: Me<Self>, 
-        obj: &<Self as GetFrom>::Object
-    ) -> <Self as GetFrom>::Property;
+    fn get_from(obj: &Self::Object) -> Self::Property;
 }
 
 /// Automatically implemented through the `GetFrom` trait.
@@ -161,7 +149,7 @@ impl<T, U> Get<U> for T
 {
     #[inline(always)]
     fn get(&self) -> U {
-        GetFrom::get_from(Me::<(U, T)>, self)
+        <(U, T) as GetFrom>::get_from(self)
     }
 }
 
@@ -172,11 +160,7 @@ pub trait ActOn<T> {
     type Object;
 
     /// Does something to an object.
-    fn act_on(
-        me: Me<Self>, 
-        action: <Self as ActOn<T>>::Action, 
-        obj: &mut <Self as ActOn<T>>::Object
-    ) -> T;
+    fn act_on(action: Self::Action, obj: &mut Self::Object) -> T;
 }
 
 /// Automatically implemented through the `ActOn` trait.
@@ -192,7 +176,7 @@ impl<T, A, V> Action<A, V> for T
 {
     #[inline(always)]
     fn action(&mut self, action: A) -> V {
-        ActOn::act_on(Me::<(A, T)>, action, self)
+        <(A, T) as ActOn<V>>::act_on(action, self)
     }
 }
 
