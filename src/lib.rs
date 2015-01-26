@@ -10,11 +10,8 @@ use std::ops::{ Deref, DerefMut };
 
 impl<'a, T, U> GetFrom for (U, &'a RefCell<T>)
     where
-        (U, T): GetFrom<Property = U, Object = T>
+        (U, T): Pair<Data = U, Object = T> + GetFrom
 {
-    type Property = U;
-    type Object = &'a RefCell<T>;
-
     #[inline(always)]
     fn get_from(obj: &&'a RefCell<T>) -> U {
         <(U, T) as GetFrom>::get_from(obj.borrow().deref())
@@ -23,11 +20,8 @@ impl<'a, T, U> GetFrom for (U, &'a RefCell<T>)
 
 impl<T, U> GetFrom for (U, Rc<RefCell<T>>)
     where
-        (U, T): GetFrom<Property = U, Object = T>
+        (U, T): Pair<Data = U, Object = T> + GetFrom
 {
-    type Property = U;
-    type Object = Rc<RefCell<T>>;
-
     #[inline(always)]
     fn get_from(obj: &Rc<RefCell<T>>) -> U {
         <(U, T) as GetFrom>::get_from(obj.borrow().deref())
@@ -36,11 +30,8 @@ impl<T, U> GetFrom for (U, Rc<RefCell<T>>)
 
 impl<'a, F, T> SetAt for (T, &'a RefCell<F>)
     where
-        (T, F): SetAt<Property = T, Object = F>
+        (T, F): Pair<Data = T, Object = F> + SetAt
 {
-    type Property = T;
-    type Object = &'a RefCell<F>;
-
     #[inline(always)]
     fn set_at(val: T, obj: &mut &'a RefCell<F>) {
         <(T, F) as SetAt>::set_at(val, obj.borrow_mut().deref_mut())
@@ -49,11 +40,8 @@ impl<'a, F, T> SetAt for (T, &'a RefCell<F>)
 
 impl<F, T> SetAt for (T, Rc<RefCell<F>>)
     where
-        (T, F): SetAt<Property = T, Object = F>
+        (T, F): Pair<Data = T, Object = F> + SetAt
 {
-    type Property = T;
-    type Object = Rc<RefCell<F>>;
-
     #[inline(always)]
     fn set_at(val: T, obj: &mut Rc<RefCell<F>>) {
         <(T, F) as SetAt>::set_at(val, obj.borrow_mut().deref_mut())
@@ -63,11 +51,8 @@ impl<F, T> SetAt for (T, Rc<RefCell<F>>)
 
 impl<'a, F, A, V> ActOn<V> for (A, &'a RefCell<F>)
     where
-        (A, F): ActOn<V, Action = A, Object = F>
+        (A, F): Pair<Data = A, Object = F> + ActOn<V>
 {
-    type Action = A;
-    type Object = &'a RefCell<F>;
-
     #[inline(always)]
     fn act_on(action: A, obj: &mut &'a RefCell<F>) -> V {
         <(A, F) as ActOn<V>>::act_on(action, obj.borrow_mut().deref_mut())
@@ -76,11 +61,8 @@ impl<'a, F, A, V> ActOn<V> for (A, &'a RefCell<F>)
 
 impl<F, A, V> ActOn<V> for (A, Rc<RefCell<F>>)
     where
-        (A, F): ActOn<V, Action = A, Object = F>
+        (A, F): Pair<Data = A, Object = F> + ActOn<V>
 {
-    type Action = A;
-    type Object = Rc<RefCell<F>>;
-
     #[inline(always)]
     fn act_on(action: A, obj: &mut Rc<RefCell<F>>) -> V {
         <(A, F) as ActOn<V>>::act_on(action, obj.borrow_mut().deref_mut())
@@ -91,12 +73,12 @@ impl<F, A, V> ActOn<V> for (A, Rc<RefCell<F>>)
 ///
 /// Must be implemented on a `(Property, Object)`
 #[unstable]
-pub trait SetAt {
-    type Property;
-    type Object;
-
+pub trait SetAt: Pair {
     /// Modify `F` with self.
-    fn set_at(val: Self::Property, obj: &mut Self::Object);
+    fn set_at(
+        val: <Self as Pair>::Data,
+        obj: &mut <Self as Pair>::Object
+    );
 }
 
 /// Automatically implemented through the `SetAt` trait.
@@ -111,7 +93,7 @@ pub trait Set<T> {
 
 impl<T, U> Set<U> for T
     where
-        (U, T): SetAt<Property = U, Object = T>,
+        (U, T): Pair<Data = U, Object = T> + SetAt,
 {
     #[inline(always)]
     fn set(mut self, val: U) -> T {
@@ -128,12 +110,11 @@ impl<T, U> Set<U> for T
 
 /// Something that can be retrieved from another object.
 #[unstable]
-pub trait GetFrom {
-    type Property;
-    type Object;
-
+pub trait GetFrom: Pair {
     /// Gets value from object.
-    fn get_from(obj: &Self::Object) -> Self::Property;
+    fn get_from(
+        obj: &<Self as Pair>::Object
+    ) -> <Self as Pair>::Data;
 }
 
 /// Automatically implemented through the `GetFrom` trait.
@@ -145,7 +126,7 @@ pub trait Get<T> {
 
 impl<T, U> Get<U> for T
     where
-        (U, T): GetFrom<Property = U, Object = T>
+        (U, T): Pair<Data = U, Object = T> + GetFrom
 {
     #[inline(always)]
     fn get(&self) -> U {
@@ -155,12 +136,12 @@ impl<T, U> Get<U> for T
 
 /// Does something to an object.
 #[unstable]
-pub trait ActOn<T> {
-    type Action;
-    type Object;
-
+pub trait ActOn<T>: Pair {
     /// Does something to an object.
-    fn act_on(action: Self::Action, obj: &mut Self::Object) -> T;
+    fn act_on(
+        action: <Self as Pair>::Data,
+        obj: &mut <Self as Pair>::Object
+    ) -> T;
 }
 
 /// Automatically implemented through the `ActOn` trait.
@@ -172,11 +153,22 @@ pub trait Action<A, V> {
 
 impl<T, A, V> Action<A, V> for T
     where
-        (A, T): ActOn<V, Action = A, Object = T>
+        (A, T): Pair<Data = A, Object = T> + ActOn<V>
 {
     #[inline(always)]
     fn action(&mut self, action: A) -> V {
         <(A, T) as ActOn<V>>::act_on(action, self)
     }
+}
+
+/// Used to reduce the need for associated types.
+pub trait Pair {
+    type Data;
+    type Object;
+}
+
+impl<T, U> Pair for (T, U) {
+    type Data = T;
+    type Object = U;
 }
 
