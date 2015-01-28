@@ -54,3 +54,80 @@ impl<T, U> Pair for (T, U) {
     type Data = T;
     type Object = U;
 }
+
+#[macro_export]
+macro_rules! quack {
+    (
+        $this:ident : $this_type:ty ,
+        get:
+        $(fn () -> $get_prop_type:ty { $e:expr })*
+        set:
+        $(fn ($val:ident : $set_prop_type:ty) { $f:expr })*
+        action:
+        $(fn ($action:ident : $action_type:ty) -> $ret_action_type:ty { $g:expr })*
+    ) => {
+        $(impl $crate::GetFrom for ($get_prop_type, $this_type) {
+            #[inline(always)]
+            fn get_from($this: &$this_type) -> $get_prop_type {
+                $e
+            }
+        })*
+        $(impl $crate::SetAt for ($set_prop_type, $this_type) {
+            #[inline(always)]
+            fn set_at($val : $set_prop_type, $this : &mut $this_type) {
+                $f
+            }
+        })*
+        $(impl $crate::ActOn<$ret_action_type> for ($action_type, $this_type) {
+            #[inline(always)]
+            fn act_on(
+                $action : $action_type,
+                $this: &mut $this_type
+            ) -> $ret_action_type {
+                $g
+            }
+        })*
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    pub struct Foo {
+        x: i32,
+        y: i32,
+    }
+
+    impl Foo {
+        pub fn new() -> Foo {
+            Foo { x: 0, y: 0 }
+        }
+    }
+
+    pub struct X(pub i32);
+    pub struct Y(pub i32);
+    pub struct IncX;
+
+    quack! {
+        this: Foo,
+        get:
+            fn () -> X { X(this.x) }
+            fn () -> Y { Y(this.y) }
+        set:
+            fn (x: X) { this.x = x.0 }
+            fn (y: Y) { this.y = y.0 }
+        action:
+            fn (__: IncX) -> () { this.x += 1 }
+    }
+
+    #[test]
+    fn test_foo() {
+        let mut foo = Foo::new().set(X(1));
+        let X(x) = foo.get();
+        assert_eq!(x, 1);
+        foo.action(IncX);
+        let X(x) = foo.get();
+        assert_eq!(x, 2);
+    }
+}
