@@ -55,52 +55,94 @@ impl<T, U> Pair for (T, U) {
     type Object = U;
 }
 
+macro_rules! items { ($($x:item)+) => ($($x)+) }
+
+#[macro_export]
+macro_rules! quack_get {
+    (
+        $this:ident : $this_type:ident [$($t:tt),*]
+        fn () -> $get_prop_type:ty { $e:expr }
+    ) => {items!{
+        impl<$($t),*> $crate::GetFrom for ($get_prop_type, $this_type<$($t),*>) {
+            #[inline(always)]
+            fn get_from($this: &$this_type<$($t),*>) -> $get_prop_type {
+                $e
+            }
+        }
+    }}
+}
+
+#[macro_export]
+macro_rules! quack_set {
+    (
+        $this:ident : $this_type:ident [$($t:tt),*]
+        fn ($val:ident : $set_prop_type:ty) { $f:expr }
+    ) => {items!{
+        impl<$($t),*> $crate::SetAt for ($set_prop_type, $this_type<$($t),*>) {
+            #[inline(always)]
+            fn set_at($val : $set_prop_type, $this : &mut $this_type<$($t),*>) {
+                $f
+            }
+        }
+    }}
+}
+
+#[macro_export]
+macro_rules! quack_action {
+    (
+        $this: ident : $this_type:ident [$($t:tt),*]
+        fn ($action:ident : $action_type:ty) -> $ret_action_type:ty { $g:expr }
+    ) => {items!{
+        impl<$($t),*> $crate::ActOn<$ret_action_type>
+        for ($action_type, $this_type<$($t),*>) {
+            #[inline(always)]
+            fn act_on(
+                $action : $action_type,
+                $this: &mut $this_type<$($t),*>
+            ) -> $ret_action_type {
+                $g
+            }
+        }
+    }}
+}
+
 #[macro_export]
 macro_rules! quack {
     (
-        $this:ident : $this_type:ty ,
+        $this:ident : $this_type:ident $t:tt
         get:
         $(fn () -> $get_prop_type:ty { $e:expr })*
         set:
         $(fn ($val:ident : $set_prop_type:ty) { $f:expr })*
         action:
         $(fn ($action:ident : $action_type:ty) -> $ret_action_type:ty { $g:expr })*
-    ) => {
-        $(impl $crate::GetFrom for ($get_prop_type, $this_type) {
-            #[inline(always)]
-            fn get_from($this: &$this_type) -> $get_prop_type {
-                $e
-            }
+    ) => {items!{
+        $(quack_get!{
+            $this : $this_type $t
+            fn () -> $get_prop_type { $e }
         })*
-        $(impl $crate::SetAt for ($set_prop_type, $this_type) {
-            #[inline(always)]
-            fn set_at($val : $set_prop_type, $this : &mut $this_type) {
-                $f
-            }
+        $(quack_set!{
+            $this: $this_type $t
+            fn ($val : $set_prop_type) { $f }
         })*
-        $(impl $crate::ActOn<$ret_action_type> for ($action_type, $this_type) {
-            #[inline(always)]
-            fn act_on(
-                $action : $action_type,
-                $this: &mut $this_type
-            ) -> $ret_action_type {
-                $g
-            }
+        $(quack_action!{
+            $this: $this_type $t
+            fn ($action : $action_type) -> $ret_action_type { $g }
         })*
-    };
+    }};
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    pub struct Foo {
+    pub struct Foo<'a, 'b, A, B> {
         x: i32,
         y: i32,
     }
 
-    impl Foo {
-        pub fn new() -> Foo {
+    impl<'a, 'b, A, B> Foo<'a, 'b, A, B> {
+        pub fn new() -> Foo<'a, 'b, A, B> {
             Foo { x: 0, y: 0 }
         }
     }
@@ -110,7 +152,7 @@ mod tests {
     pub struct IncX;
 
     quack! {
-        this: Foo,
+        this: Foo['a, 'b, A, B]
         get:
             fn () -> X { X(this.x) }
             fn () -> Y { Y(this.y) }
@@ -121,9 +163,11 @@ mod tests {
             fn (__: IncX) -> () { this.x += 1 }
     }
 
+    pub struct Bar;
+
     #[test]
     fn test_foo() {
-        let mut foo = Foo::new().set(X(1));
+        let mut foo: Foo<Bar, Bar> = Foo::new().set(X(1));
         let X(x) = foo.get();
         assert_eq!(x, 1);
         foo.action(IncX);
