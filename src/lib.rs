@@ -55,18 +55,20 @@ impl<T, U> Pair for (T, U) {
     type Object = U;
 }
 
-macro_rules! items { ($($x:item)+) => ($($x)+) }
+/// Used to work around limits in macro syntax.
+#[macro_export]
+macro_rules! quack_macro_items { ($($x:item)+) => ($($x)+) }
 
 #[macro_export]
 macro_rules! quack_get {
     (
         $this:ident : $this_type:ident [$($t:tt),*]
-        fn () -> $get_prop_type:path { $e:expr }
-    ) => {items!{
+        fn () -> $get_prop_type:path { $($e:tt)* }
+    ) => {quack_macro_items!{
         impl<$($t),*> $crate::GetFrom for ($get_prop_type, $this_type<$($t),*>) {
             #[inline(always)]
             fn get_from($this: &$this_type<$($t),*>) -> $get_prop_type {
-                $e
+                $($e)*
             }
         }
     }}
@@ -76,12 +78,12 @@ macro_rules! quack_get {
 macro_rules! quack_set {
     (
         $this:ident : $this_type:ident [$($t:tt),*]
-        fn ($val:ident : $set_prop_type:path) { $f:expr }
-    ) => {items!{
+        fn ($val:ident : $set_prop_type:path) { $($f:tt)* }
+    ) => {quack_macro_items!{
         impl<$($t),*> $crate::SetAt for ($set_prop_type, $this_type<$($t),*>) {
             #[inline(always)]
             fn set_at($val : $set_prop_type, $this : &mut $this_type<$($t),*>) {
-                $f
+                $($f)*
             }
         }
     }}
@@ -91,8 +93,8 @@ macro_rules! quack_set {
 macro_rules! quack_action {
     (
         $this: ident : $this_type:ident [$($t:tt),*]
-        fn ($action:ident : $action_type:path) -> $ret_action_type:ty { $g:expr }
-    ) => {items!{
+        fn ($action:ident : $action_type:path) -> $ret_action_type:ty { $($g:tt)* }
+    ) => {quack_macro_items!{
         impl<$($t),*> $crate::ActOn<$ret_action_type>
         for ($action_type, $this_type<$($t),*>) {
             #[inline(always)]
@@ -100,7 +102,7 @@ macro_rules! quack_action {
                 $action : $action_type,
                 $this: &mut $this_type<$($t),*>
             ) -> $ret_action_type {
-                $g
+                $($g)*
             }
         }
     }}
@@ -111,25 +113,25 @@ macro_rules! quack {
     (
         $this:ident : $this_type:ident $t:tt
         get:
-        $(fn () -> $get_prop_type:path { $e:expr })*
+        $(fn () -> $get_prop_type:path { $($e:tt)* })*
         set:
-        $(fn ($val:ident : $set_prop_type:path) { $f:expr })*
+        $(fn ($val:ident : $set_prop_type:path) { $($f:tt)* })*
         action:
-        $(fn ($action:ident : $action_type:path) -> $ret_action_type:ty { $g:expr })*
-    ) => {items!{
+        $(fn ($action:ident : $action_type:path) -> $ret_action_type:ty { $($g:expr)* })*
+    ) => {
         $(quack_get!{
             $this : $this_type $t
-            fn () -> $get_prop_type { $e }
+            fn () -> $get_prop_type { $($e)* }
         })*
         $(quack_set!{
             $this: $this_type $t
-            fn ($val : $set_prop_type) { $f }
+            fn ($val : $set_prop_type) { $($f)* }
         })*
         $(quack_action!{
             $this: $this_type $t
-            fn ($action : $action_type) -> $ret_action_type { $g }
+            fn ($action : $action_type) -> $ret_action_type { $($g)* }
         })*
-    }};
+    };
 }
 
 #[cfg(test)]
@@ -154,7 +156,7 @@ mod tests {
     quack! {
         this: Foo['a, 'b, A, B]
         get:
-            fn () -> X<'a> { X(this.x) }
+            fn () -> X<'a> { assert!(true); X(this.x) }
             fn () -> Y<A> { Y(this.y) }
         set:
             fn (x: X<'a>) { this.x = x.0 }
