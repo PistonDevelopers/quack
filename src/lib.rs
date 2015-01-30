@@ -95,9 +95,9 @@ macro_rules! quack_set {
 macro_rules! quack_action {
     (
         $this: ident : $this_type:ident [$($t:tt),*]
-        fn ($action:ident : $action_type:path) -> $ret_action_type:ty { $($g:tt)* }
+        fn $([$($u:tt),*])* ($action:ident : $action_type:path) -> $ret_action_type:ty { $($g:tt)* }
     ) => {quack_macro_items!{
-        impl<$($t),*> $crate::ActOn<$ret_action_type>
+        impl<$($($u,)*)* $($t),*> $crate::ActOn<$ret_action_type>
         for ($action_type, $this_type<$($t),*>) {
             #[allow(unused_variables)]
             #[inline(always)]
@@ -120,7 +120,7 @@ macro_rules! quack {
         set:
         $(fn ($val:ident : $set_prop_type:path) { $($f:tt)* })*
         action:
-        $(fn ($action:ident : $action_type:path) -> $ret_action_type:ty { $($g:expr)* })*
+        $(fn $([$($u:tt),*])* ($action:ident : $action_type:path) -> $ret_action_type:ty { $($g:expr)* })*
     ) => {
         $(quack_get!{
             $this : $this_type $t
@@ -132,7 +132,7 @@ macro_rules! quack {
         })*
         $(quack_action!{
             $this: $this_type $t
-            fn ($action : $action_type) -> $ret_action_type { $($g)* }
+            fn $([$($u),*])* ($action : $action_type) -> $ret_action_type { $($g)* }
         })*
     };
 }
@@ -155,6 +155,8 @@ mod tests {
     pub struct X<'a>(pub i32);
     pub struct Y<A>(pub i32);
     pub struct IncX;
+    #[allow(dead_code)]
+    pub struct IncY<'c>;
 
     quack! {
         this: Foo['a, 'b, A, B]
@@ -166,6 +168,7 @@ mod tests {
             fn (y: Y<A>) { this.y = y.0 }
         action:
             fn (__: IncX) -> () { this.x += 1 }
+            fn ['c] (__: IncY<'c>) -> () { this.y += 1 }
     }
 
     pub struct Bar;
