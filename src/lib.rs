@@ -66,6 +66,7 @@ macro_rules! quack_get {
         fn () -> $get_prop_type:path { $($e:tt)* }
     ) => {quack_macro_items!{
         impl<$($t),*> $crate::GetFrom for ($get_prop_type, $this_type<$($t),*>) {
+            #[allow(unused_variables)]
             #[inline(always)]
             fn get_from($this: &$this_type<$($t),*>) -> $get_prop_type {
                 $($e)*
@@ -81,6 +82,7 @@ macro_rules! quack_set {
         fn ($val:ident : $set_prop_type:path) { $($f:tt)* }
     ) => {quack_macro_items!{
         impl<$($t),*> $crate::SetAt for ($set_prop_type, $this_type<$($t),*>) {
+            #[allow(unused_variables)]
             #[inline(always)]
             fn set_at($val : $set_prop_type, $this : &mut $this_type<$($t),*>) {
                 $($f)*
@@ -97,6 +99,7 @@ macro_rules! quack_action {
     ) => {quack_macro_items!{
         impl<$($t),*> $crate::ActOn<$ret_action_type>
         for ($action_type, $this_type<$($t),*>) {
+            #[allow(unused_variables)]
             #[inline(always)]
             fn act_on(
                 $action : $action_type,
