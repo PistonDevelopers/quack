@@ -63,7 +63,7 @@ macro_rules! quack_macro_items { ($($x:item)+) => ($($x)+) }
 macro_rules! quack_get {
     (
         $this:ident : $this_type:ident [$($t:tt),*]
-        fn [$($u:tt),*] () -> $get_prop_type:path [$($w:tt)*] { $($e:tt)* }
+        fn [$($u:tt),*] () -> $get_prop_type:path [$($w:tt)*] $e:block
     ) => {quack_macro_items!{
         impl<$($u),*> $crate::GetFrom for ($get_prop_type, $this_type<$($t),*>)
             $($w)*
@@ -71,17 +71,17 @@ macro_rules! quack_get {
             #[allow(unused_variables)]
             #[inline(always)]
             fn get_from($this: &$this_type<$($t),*>) -> $get_prop_type {
-                $($e)*
+                $e
             }
         }
     }};
     (
         $this:ident : $this_type:ident [$($t:tt),*]
-        fn () -> $get_prop_type:path [$($w:tt)*] { $($e:tt)* }
+        fn () -> $get_prop_type:path [$($w:tt)*] $e:block
     ) => {
         quack_get! {
             $this : $this_type [$($t),*]
-            fn [$($t),*] () -> $get_prop_type [$($w)*] { $($e)* }
+            fn [$($t),*] () -> $get_prop_type [$($w)*] $e
         }
     }
 }
@@ -90,7 +90,7 @@ macro_rules! quack_get {
 macro_rules! quack_set {
     (
         $this:ident : $this_type:ident [$($t:tt),*]
-        fn [$($u:tt),*] ($val:ident : $set_prop_type:path) [$($w:tt)*] { $($f:tt)* }
+        fn [$($u:tt),*] ($val:ident : $set_prop_type:path) [$($w:tt)*] $f:block
     ) => {quack_macro_items!{
         impl<$($u),*> $crate::SetAt for ($set_prop_type, $this_type<$($t),*>)
             $($w)*
@@ -98,17 +98,17 @@ macro_rules! quack_set {
             #[allow(unused_variables)]
             #[inline(always)]
             fn set_at($val : $set_prop_type, $this : &mut $this_type<$($t),*>) {
-                $($f)*
+                $f
             }
         }
     }};
     (
         $this:ident : $this_type:ident [$($t:tt),*]
-        fn ($val:ident : $set_prop_type:path) [$($w:tt)*] { $($f:tt)* }
+        fn ($val:ident : $set_prop_type:path) [$($w:tt)*] $f:block
     ) => {
         quack_set! {
             $this : $this_type [$($t),*]
-            fn [$($t),*] ($val : $set_prop_type) [$($w)*] { $($f)* }
+            fn [$($t),*] ($val : $set_prop_type) [$($w)*] $f
         }
     }
 }
@@ -119,7 +119,7 @@ macro_rules! quack_action {
         $this: ident : $this_type:ident [$($t:tt),*]
         fn [$($u:tt),*] (
             $action:ident : $action_type:path
-        ) -> $ret_action_type:ty [$($w:tt)*] { $($g:tt)* }
+        ) -> $ret_action_type:ty [$($w:tt)*] $g:block
     ) => {quack_macro_items!{
         impl<$($u),*> $crate::ActOn<$ret_action_type>
         for ($action_type, $this_type<$($t),*>)
@@ -131,7 +131,7 @@ macro_rules! quack_action {
                 $action : $action_type,
                 $this: &mut $this_type<$($t),*>
             ) -> $ret_action_type {
-                $($g)*
+                $g
             }
         }
     }};
@@ -139,11 +139,11 @@ macro_rules! quack_action {
         $this: ident : $this_type:ident [$($t:tt),*]
         fn (
             $action:ident : $action_type:path
-        ) -> $ret_action_type:ty [$($w:tt)*] { $($g:tt)* }
+        ) -> $ret_action_type:ty [$($w:tt)*] $g:block
     ) => {
         quack_action! {
             $this : $this_type [$($t),*]
-            fn [$($t),*] ($action : $action_type) -> $ret_action_type [$($w)*] { $($g)* }
+            fn [$($t),*] ($action : $action_type) -> $ret_action_type [$($w)*] $g
         }
     }
 }
@@ -154,29 +154,29 @@ macro_rules! quack {
         $this:ident : $this_type:ident $t:tt
         get:
         $(fn $([$($u_get:tt),*])* (
-        ) -> $get_prop_type:path [$($w_get:tt)*] { $($e:tt)* })*
+        ) -> $get_prop_type:path [$($w_get:tt)*] $e:block)*
         set:
         $(fn $([$($u_set:tt),*])* (
             $val:ident : $set_prop_type:path
-        ) [$($w_set:tt)*] { $($f:tt)* })*
+        ) [$($w_set:tt)*] $f:block)*
         action:
         $(fn $([$($u_action:tt),*])* (
             $action:ident : $action_type:path
-        ) -> $ret_action_type:ty [$($w_action:tt)*] { $($g:expr)* })*
+        ) -> $ret_action_type:ty [$($w_action:tt)*] $g:block)*
     ) => {
         $(quack_get!{
             $this : $this_type $t
-            fn $([$($u_get),*])* () -> $get_prop_type [$($w_get)*] { $($e)* }
+            fn $([$($u_get),*])* () -> $get_prop_type [$($w_get)*] $e
         })*
         $(quack_set!{
             $this: $this_type $t
-            fn $([$($u_set),*])* ($val : $set_prop_type) [$($w_set)*] { $($f)* }
+            fn $([$($u_set),*])* ($val : $set_prop_type) [$($w_set)*] $f
         })*
         $(quack_action!{
             $this: $this_type $t
             fn $([$($u_action),*])* (
                 $action : $action_type
-            ) -> $ret_action_type [$($w_action)*] { $($g)* }
+            ) -> $ret_action_type [$($w_action)*] $g
         })*
     };
 }
