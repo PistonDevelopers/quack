@@ -184,29 +184,38 @@ macro_rules! quack {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::marker::{ PhantomData };
 
     pub struct Foo<'a, 'b, A, B> {
         x: i32,
         y: i32,
+        _marker_lifetime_a: PhantomData<&'a ()>,
+        _marker_lifetime_b: PhantomData<&'b ()>,
+        _marker_a: PhantomData<A>,
+        _marker_b: PhantomData<B>,
     }
 
     impl<'a, 'b, A, B> Foo<'a, 'b, A, B> {
         pub fn new() -> Foo<'a, 'b, A, B> {
-            Foo { x: 0, y: 0 }
+            Foo { _marker_lifetime_a: PhantomData,
+                  _marker_lifetime_b: PhantomData,
+                  _marker_a: PhantomData,
+                  _marker_b: PhantomData,
+                  x: 0, y: 0 }
         }
     }
 
-    pub struct X<'a>(pub i32);
-    pub struct Y<A>(pub i32);
+    pub struct X<'a>(pub i32, PhantomData<&'a ()>);
+    pub struct Y<A>(pub i32, PhantomData<A>);
     pub struct IncX;
     #[allow(dead_code)]
-    pub struct IncY<'c>;
+    pub struct IncY<'c>(PhantomData<&'c ()>);
 
     quack! {
         this: Foo['a, 'b, A, B]
         get:
-            fn () -> X<'a> [] { assert!(true); X(this.x) }
-            fn () -> Y<A> [] { Y(this.y) }
+            fn () -> X<'a> [] { assert!(true); X(this.x, PhantomData) }
+            fn () -> Y<A> [] { Y(this.y, PhantomData) }
         set:
             fn (x: X<'a>) [] { this.x = x.0 }
             fn (y: Y<A>) [] { this.y = y.0 }
@@ -219,11 +228,11 @@ mod tests {
 
     #[test]
     fn test_foo() {
-        let mut foo: Foo<Bar, Bar> = Foo::new().set(X(1));
-        let X(x) = foo.get();
+        let mut foo: Foo<Bar, Bar> = Foo::new().set(X(1, PhantomData));
+        let X(x,_) = foo.get();
         assert_eq!(x, 1);
         foo.action(IncX);
-        let X(x) = foo.get();
+        let X(x,_) = foo.get();
         assert_eq!(x, 2);
     }
 }
