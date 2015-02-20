@@ -45,7 +45,7 @@ pub trait ActOn<T>: Pair {
 }
 
 /// Used to reduce the need for associated types.
-pub trait Pair {
+pub trait Pair: std::marker::PhantomFn<Self> {
     type Data;
     type Object;
 }
