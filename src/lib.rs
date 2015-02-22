@@ -44,7 +44,15 @@ pub trait ActOn<T>: Pair {
     ) -> T;
 }
 
+/// Connects the object with another type.
+#[unstable]
+pub trait Associative: Pair {
+    /// The type associated with object.
+    type Type;
+}
+
 /// Used to reduce the need for associated types.
+#[unstable]
 pub trait Pair: std::marker::PhantomFn<Self> {
     type Data;
     type Object;

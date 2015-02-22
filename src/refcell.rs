@@ -7,6 +7,7 @@ use GetFrom;
 use SetAt;
 use ActOn;
 use Pair;
+use Associative;
 
 impl<'a, T, U> GetFrom for (U, &'a RefCell<T>)
     where
@@ -68,3 +69,18 @@ impl<F, A, V> ActOn<V> for (A, Rc<RefCell<F>>)
         <(A, F) as ActOn<V>>::act_on(action, obj.borrow_mut().deref_mut())
     }
 }
+
+impl<'a, F, A> Associative for (A, &'a RefCell<F>)
+    where
+        (A, F): Pair<Data = A, Object = F> + Associative
+{
+    type Type = <(A, F) as Associative>::Type;
+}
+
+impl<F, A> Associative for (A, Rc<RefCell<F>>)
+    where
+        (A, F): Pair<Data = A, Object = F> + Associative
+{
+    type Type = <(A, F) as Associative>::Type;
+}
+
