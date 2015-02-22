@@ -36,12 +36,14 @@ pub trait GetFrom: Pair {
 
 /// Does something to an object.
 #[unstable]
-pub trait ActOn<T>: Pair {
+pub trait ActOn: Pair {
+    type Result;
+
     /// Does something to an object.
     fn act_on(
         action: <Self as Pair>::Data,
         obj: &mut <Self as Pair>::Object
-    ) -> T;
+    ) -> Self::Result;
 }
 
 /// Connects the object with another type.
@@ -129,10 +131,12 @@ macro_rules! quack_action {
             $action:ident : $action_type:path
         ) -> $ret_action_type:ty [$($w:tt)*] $g:block
     ) => {quack_macro_items!{
-        impl<$($u),*> $crate::ActOn<$ret_action_type>
+        impl<$($u),*> $crate::ActOn
         for ($action_type, $this_type<$($t),*>)
             $($w)*
         {
+            type Result = $ret_action_type;
+
             #[allow(unused_variables)]
             #[inline(always)]
             fn act_on(
