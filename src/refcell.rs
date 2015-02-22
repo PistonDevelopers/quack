@@ -50,23 +50,33 @@ impl<F, T> SetAt for (T, Rc<RefCell<F>>)
 }
 
 
-impl<'a, F, A, V> ActOn<V> for (A, &'a RefCell<F>)
+impl<'a, F, A> ActOn for (A, &'a RefCell<F>)
     where
-        (A, F): Pair<Data = A, Object = F> + ActOn<V>
+        (A, F): Pair<Data = A, Object = F> + ActOn
 {
+    type Result = <(A, F) as ActOn>::Result;
+
     #[inline(always)]
-    fn act_on(action: A, obj: &mut &'a RefCell<F>) -> V {
-        <(A, F) as ActOn<V>>::act_on(action, obj.borrow_mut().deref_mut())
+    fn act_on(
+        action: A, 
+        obj: &mut &'a RefCell<F>
+    ) -> <(A, F) as ActOn>::Result {
+        <(A, F) as ActOn>::act_on(action, obj.borrow_mut().deref_mut())
     }
 }
 
-impl<F, A, V> ActOn<V> for (A, Rc<RefCell<F>>)
+impl<F, A> ActOn for (A, Rc<RefCell<F>>)
     where
-        (A, F): Pair<Data = A, Object = F> + ActOn<V>
+        (A, F): Pair<Data = A, Object = F> + ActOn
 {
+    type Result = <(A, F) as ActOn>::Result;
+
     #[inline(always)]
-    fn act_on(action: A, obj: &mut Rc<RefCell<F>>) -> V {
-        <(A, F) as ActOn<V>>::act_on(action, obj.borrow_mut().deref_mut())
+    fn act_on(
+        action: A, 
+        obj: &mut Rc<RefCell<F>>
+    ) -> <(A, F) as ActOn>::Result {
+        <(A, F) as ActOn>::act_on(action, obj.borrow_mut().deref_mut())
     }
 }
 
