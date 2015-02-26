@@ -37,6 +37,7 @@ pub trait GetFrom: Pair {
 /// Does something to an object.
 #[unstable]
 pub trait ActOn: Pair {
+    /// The return type of the action.
     type Result;
 
     /// Does something to an object.
@@ -56,7 +57,9 @@ pub trait Associative: Pair {
 /// Used to reduce the need for associated types.
 #[unstable]
 pub trait Pair: std::marker::PhantomFn<Self> {
+    /// The data type of the message.
     type Data;
+    /// The object that data is sent to or received from.
     type Object;
 }
 

@@ -4,6 +4,7 @@ use Pair;
 /// Automatically implemented through the `ActOn` trait.
 #[unstable]
 pub trait Action<A> {
+    /// The return type of the action.
     type Result;
 
     /// Does something.
