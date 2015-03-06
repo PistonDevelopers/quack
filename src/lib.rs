@@ -12,6 +12,8 @@ mod refcell;
 mod get;
 mod set;
 mod action;
+mod box_ptr;
+mod ptr;
 
 /// Something that can be set at an object.
 ///
