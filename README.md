@@ -3,6 +3,8 @@ quack
 
 Duck typing traits
 
+*Notice: This library is deprecated due to change in coherence rules in Rust*
+
 [Why Quack?](https://github.com/PistonDevelopers/quack/issues/10)
 
 ```Rust
