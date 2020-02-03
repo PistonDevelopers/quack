@@ -3,7 +3,7 @@
 name = "quack"
 version = "0.1.0"
 authors = [
-    "bvssvni <bvssvni@gmail.com",
+    "bvssvni <bvssvni@gmail.com>",
     "Jonathan Reem <jonathan.reem@gmail.com>"
 ]
 keywords = ["ducktyping", "duck", "typing", "piston"]
