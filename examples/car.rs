@@ -42,22 +42,31 @@ impl Action<ShiftToSummerTires> for Car {
 pub trait GenericCar:
     GetSet<LeftFrontTire> +
     GetSet<RightFrontTire> +
+    GetSet<LeftBackTire> +
+    GetSet<RightBackTire> +
     Action<ShiftToSummerTires> +
     Action<ShiftToWinterTires>
 {
     fn left_front_tire(&self) -> Tire {Get::<LeftFrontTire>::get(self).0}
     fn right_front_tire(&self) -> Tire {Get::<RightFrontTire>::get(self).0}
+    fn left_back_tire(&self) -> Tire {Get::<LeftBackTire>::get(self).0}
+    fn right_back_tire(&self) -> Tire {Get::<RightBackTire>::get(self).0}
 
     fn set_left_front_tire(&mut self, val: Tire) {self.set(LeftFrontTire(val))}
     fn set_right_front_tire(&mut self, val: Tire) {self.set(RightFrontTire(val))}
+    fn set_left_back_tire(&mut self, val: Tire) {self.set(LeftBackTire(val))}
+    fn set_right_back_tire(&mut self, val: Tire) {self.set(RightBackTire(val))}
 
     fn shift_to_winter_tires(&mut self) {self.action(ShiftToWinterTires);}
     fn shift_to_summer_tires(&mut self) {self.action(ShiftToSummerTires);}
 }
 
+// Auto implement `GenericCar`.
 impl<T> GenericCar for T where T:
     GetSet<LeftFrontTire> +
     GetSet<RightFrontTire> +
+    GetSet<LeftBackTire> +
+    GetSet<RightBackTire> +
     Action<ShiftToSummerTires> +
     Action<ShiftToWinterTires>
 {}
@@ -68,8 +77,6 @@ fn main() {
     car.shift_to_winter_tires();
     println!("{:?}", car);
 
-    car.set_left_front_tire(Tire {winter: true});
-
+    car.set_left_front_tire(Tire {winter: false});
     println!("Left front tire: {:?}", car.left_front_tire());
-
 }

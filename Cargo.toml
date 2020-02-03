@@ -12,6 +12,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/pistondevelopers/quack.git"
 homepage = "https://github.com/pistondevelopers/quack"
+documentation = "https://docs.rs/quack"
 edition = "2018"
 
 [lib]
