@@ -20,6 +20,9 @@
 //!
 //! The `quack!` macro can be used to implement simple get/set properties.
 //!
+//! `Get`, `Set` and `Action` traits are auto implemented for `&RefCell<T>` and `Rc<RefCell<T>>`.
+//! This simplifies working with dynamic borrowing in a single thread.
+//!
 //! ### Example
 //!
 //! ```rust
@@ -106,6 +109,8 @@
 //!     println!("Left front tire: {:?}", car.left_front_tire());
 //! }
 //! ```
+
+mod refcell;
 
 /// Get property.
 pub trait Get<T> {
