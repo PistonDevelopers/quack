@@ -1,45 +1,109 @@
-quack
-=====
+# Quack - Duck typing traits
 
-Duck typing traits
+[Duck typing](https://en.wikipedia.org/wiki/Duck_typing) is a method
+where code works when certain methods and properties are present,
+instead of requiring a certain type.
 
-*Notice: This library is deprecated due to change in coherence rules in Rust*
+### Design
 
-[Why Quack?](https://github.com/PistonDevelopers/quack/issues/10)
+An duck typing abstraction is composed from the following building blocks:
 
-```Rust
-quack! {
-    obj: Button[],
-    get:
-        fn () -> Position [] { Position(obj.pos) }
-    set:
-        fn (val: Position) [] { obj.pos = val.0 }
-    action:
-        fn (__: Enable) -> () [] { obj.enabled = true; }
-        fn (__: Disable) -> () [] { obj.enabled = false; }
+- Get properties (implements the `Get` trait)
+- Set properties (implements the `Set` trait)
+- Actions (implements the `Action` trait)
+
+Is is common to declare a newtype for each property and action.
+
+For example, declare `pub struct X(pub f64);` for `Get<X>` and `Set<X>`.
+
+The `quack!` macro can be used to implement simple get/set properties.
+
+`Get`, `Set` and `Action` traits are auto implemented for `&RefCell<T>` and `Rc<RefCell<T>>`.
+This simplifies working with dynamic borrowing in a single thread.
+
+### Example
+
+```rust
+extern crate quack;
+
+use quack::*;
+
+#[derive(Copy, Clone, Debug)]
+pub struct Tire {pub winter: bool}
+
+#[derive(Debug, Clone)]
+pub struct Car {pub tires: [Tire; 4]}
+
+pub struct LeftFrontTire(pub Tire);
+pub struct RightFrontTire(pub Tire);
+pub struct LeftBackTire(pub Tire);
+pub struct RightBackTire(pub Tire);
+
+quack!{
+    for Car {
+        get_set LeftFrontTire(self.tires[0]),
+        get_set RightFrontTire(self.tires[1]),
+        get_set LeftBackTire(self.tires[2]),
+        get_set RightBackTire(self.tires[3]),
+    }
 }
 
-// Implement trait for all types that can get/set position and with enable action
-impl<T> Foo for T
-    where
-        (Position, T): Pair<Data = Position, Object = T> + GetFrom + SetAt,
-        (Enable, T): Pair<Data = Enable, Object = T> + ActOn<()>
+pub struct ShiftToWinterTires;
+impl Action<ShiftToWinterTires> for Car {
+    type Result = ();
+    fn action(&mut self, _: ShiftToWinterTires) -> () {
+        for i in 0..4 {self.tires[i].winter = true}
+    }
+}
+
+pub struct ShiftToSummerTires;
+impl Action<ShiftToSummerTires> for Car {
+    type Result = ();
+    fn action(&mut self, _: ShiftToSummerTires) -> () {
+        for i in 0..4 {self.tires[i].winter = false}
+    }
+}
+
+// Implement trait on top of duck type object.
+pub trait GenericCar:
+    GetSet<LeftFrontTire> +
+    GetSet<RightFrontTire> +
+    GetSet<LeftBackTire> +
+    GetSet<RightBackTire> +
+    Action<ShiftToSummerTires> +
+    Action<ShiftToWinterTires>
 {
-    ...
+    fn left_front_tire(&self) -> Tire {Get::<LeftFrontTire>::get(self).0}
+    fn right_front_tire(&self) -> Tire {Get::<RightFrontTire>::get(self).0}
+    fn left_back_tire(&self) -> Tire {Get::<LeftBackTire>::get(self).0}
+    fn right_back_tire(&self) -> Tire {Get::<RightBackTire>::get(self).0}
+
+    fn set_left_front_tire(&mut self, val: Tire) {self.set(LeftFrontTire(val))}
+    fn set_right_front_tire(&mut self, val: Tire) {self.set(RightFrontTire(val))}
+    fn set_left_back_tire(&mut self, val: Tire) {self.set(LeftBackTire(val))}
+    fn set_right_back_tire(&mut self, val: Tire) {self.set(RightBackTire(val))}
+
+    fn shift_to_winter_tires(&mut self) {self.action(ShiftToWinterTires);}
+    fn shift_to_summer_tires(&mut self) {self.action(ShiftToSummerTires);}
 }
 
-use quack::{ Get, Set, Action };
+// Auto implement `GenericCar`.
+impl<T> GenericCar for T where T:
+    GetSet<LeftFrontTire> +
+    GetSet<RightFrontTire> +
+    GetSet<LeftBackTire> +
+    GetSet<RightBackTire> +
+    Action<ShiftToSummerTires> +
+    Action<ShiftToWinterTires>
+{}
 
-// Build button
-let button = Button::new().set(Position([0, 0]));
+fn main() {
+    let mut car = Car {tires: [Tire {winter: false}; 4]};
 
-// Set position
-button.set_mut(Position([0, 0]));
+    car.shift_to_winter_tires();
+    println!("{:?}", car);
 
-// Get position
-let Position([x, y]) = button.get();
-
-// Enable
-button.action(Enable);
+    car.set_left_front_tire(Tire {winter: false});
+    println!("Left front tire: {:?}", car.left_front_tire());
+}
 ```
-
