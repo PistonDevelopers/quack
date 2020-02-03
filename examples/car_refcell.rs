@@ -1,32 +1,8 @@
-# Quack - Duck typing traits
-
-[Duck typing](https://en.wikipedia.org/wiki/Duck_typing) is a method
-where code works when certain methods and properties are present,
-instead of requiring a certain type.
-
-### Design
-
-An duck typing abstraction is composed from the following building blocks:
-
-- Get properties (implements the `Get` trait)
-- Set properties (implements the `Set` trait)
-- Actions (implements the `Action` trait)
-
-Is is common to declare a newtype for each property and action.
-
-For example, declare `pub struct X(pub f64);` for `Get<X>` and `Set<X>`.
-
-The `quack!` macro can be used to implement simple get/set properties.
-
-`Get`, `Set` and `Action` traits are auto implemented for `&RefCell<T>` and `Rc<RefCell<T>>`.
-This simplifies working with dynamic borrowing in a single thread.
-
-### Example
-
-```rust
 extern crate quack;
 
 use quack::*;
+
+use std::cell::RefCell;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Tire {pub winter: bool}
@@ -98,7 +74,7 @@ impl<T> GenericCar for T where T:
 {}
 
 fn main() {
-    let mut car = Car {tires: [Tire {winter: false}; 4]};
+    let mut car = &RefCell::new(Car {tires: [Tire {winter: false}; 4]});
 
     car.shift_to_winter_tires();
     println!("{:?}", car);
@@ -106,4 +82,3 @@ fn main() {
     car.set_left_front_tire(Tire {winter: false});
     println!("Left front tire: {:?}", car.left_front_tire());
 }
-```

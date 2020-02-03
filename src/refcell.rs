@@ -1,94 +1,36 @@
+use super::*;
 
-use std::rc::Rc;
 use std::cell::RefCell;
-use std::ops::{ Deref, DerefMut };
+use std::rc::Rc;
 
-use GetFrom;
-use SetAt;
-use ActOn;
-use Pair;
-use Associative;
-
-impl<'a, T, U> GetFrom for (U, &'a RefCell<T>)
-    where
-        (U, T): Pair<Data = U, Object = T> + GetFrom
-{
+impl<'a, T, U> Get<T> for &'a RefCell<U> where U: Get<T> {
     #[inline(always)]
-    fn get_from(obj: &&'a RefCell<T>) -> U {
-        <(U, T) as GetFrom>::get_from(obj.borrow().deref())
-    }
+    fn get(&self) -> T {self.borrow().get()}
 }
 
-impl<T, U> GetFrom for (U, Rc<RefCell<T>>)
-    where
-        (U, T): Pair<Data = U, Object = T> + GetFrom
-{
+impl<'a, T, U> Set<T> for &'a RefCell<U> where U: Set<T> {
     #[inline(always)]
-    fn get_from(obj: &Rc<RefCell<T>>) -> U {
-        <(U, T) as GetFrom>::get_from(obj.borrow().deref())
-    }
+    fn set(&mut self, val: T) {self.borrow_mut().set(val)}
 }
 
-impl<'a, F, T> SetAt for (T, &'a RefCell<F>)
-    where
-        (T, F): Pair<Data = T, Object = F> + SetAt
-{
+impl<'a, T, U> Action<T> for &'a RefCell<U> where U: Action<T> {
+    type Result = U::Result;
     #[inline(always)]
-    fn set_at(val: T, obj: &mut &'a RefCell<F>) {
-        <(T, F) as SetAt>::set_at(val, obj.borrow_mut().deref_mut())
-    }
+    fn action(&mut self, val: T) -> Self::Result {self.borrow_mut().action(val)}
 }
 
-impl<F, T> SetAt for (T, Rc<RefCell<F>>)
-    where
-        (T, F): Pair<Data = T, Object = F> + SetAt
-{
+impl<T, U> Get<T> for Rc<RefCell<U>> where U: Get<T> {
     #[inline(always)]
-    fn set_at(val: T, obj: &mut Rc<RefCell<F>>) {
-        <(T, F) as SetAt>::set_at(val, obj.borrow_mut().deref_mut())
-    }
+    fn get(&self) -> T {self.borrow().get()}
 }
 
-impl<'a, F, A> ActOn for (A, &'a RefCell<F>)
-    where
-        (A, F): Pair<Data = A, Object = F> + ActOn
-{
-    type Result = <(A, F) as ActOn>::Result;
-
+impl<T, U> Set<T> for Rc<RefCell<U>> where U: Set<T> {
     #[inline(always)]
-    fn act_on(
-        action: A,
-        obj: &mut &'a RefCell<F>
-    ) -> <(A, F) as ActOn>::Result {
-        <(A, F) as ActOn>::act_on(action, obj.borrow_mut().deref_mut())
-    }
+    fn set(&mut self, val: T) {self.borrow_mut().set(val)}
 }
 
-impl<F, A> ActOn for (A, Rc<RefCell<F>>)
-    where
-        (A, F): Pair<Data = A, Object = F> + ActOn
-{
-    type Result = <(A, F) as ActOn>::Result;
-
+impl<T, U> Action<T> for Rc<RefCell<U>> where U: Action<T> {
+    type Result = U::Result;
     #[inline(always)]
-    fn act_on(
-        action: A,
-        obj: &mut Rc<RefCell<F>>
-    ) -> <(A, F) as ActOn>::Result {
-        <(A, F) as ActOn>::act_on(action, obj.borrow_mut().deref_mut())
-    }
-}
-
-impl<'a, F, A> Associative for (A, &'a RefCell<F>)
-    where
-        (A, F): Pair<Data = A, Object = F> + Associative
-{
-    type Type = <(A, F) as Associative>::Type;
-}
-
-impl<F, A> Associative for (A, Rc<RefCell<F>>)
-    where
-        (A, F): Pair<Data = A, Object = F> + Associative
-{
-    type Type = <(A, F) as Associative>::Type;
+    fn action(&mut self, val: T) -> Self::Result {self.borrow_mut().action(val)}
 }
